@@ -1,0 +1,65 @@
+{
+  "books": [
+    {
+      "id": "libro-001",
+      "titulo": "Cien anos de soledad",
+      "autor": "Gabriel Garcia Marquez",
+      "anio_publicacion": 1967,
+      "genero": "novela",
+      "sinopsis": "Un recorrido por la historia de la familia Buendia en Macondo.",
+      "estado": "disponible",
+      "prestado_a": null,
+      "prestado_en": null,
+      "creado_en": "2026-07-28T00:00:00Z"
+    },
+    {
+      "id": "libro-002",
+      "titulo": "Clean Code",
+      "autor": "Robert C. Martin",
+      "anio_publicacion": 2008,
+      "genero": "tecnologia",
+      "sinopsis": "Principios practicos para escribir codigo mas legible.",
+      "estado": "disponible",
+      "prestado_a": null,
+      "prestado_en": null,
+      "creado_en": "2026-07-28T00:00:00Z"
+    },
+    {
+      "id": "libro-003",
+      "titulo": "El principito",
+      "autor": "Antoine de Saint-Exupery",
+      "anio_publicacion": 1943,
+      "genero": "fabula",
+      "sinopsis": "Una historia corta sobre amistad, infancia y sentido de la vida.",
+      "estado": "prestado",
+      "prestado_a": "Maria",
+      "prestado_en": "2026-07-27T18:30:00Z",
+      "creado_en": "2026-07-28T00:00:00Z"
+    },
+    {
+      "id": "libro-004",
+      "titulo": "Don Quijote de la Mancha",
+      "autor": "Miguel de Cervantes",
+      "anio_publicacion": 1605,
+      "genero": "clasico",
+      "sinopsis": "La historia del caballero que confunde molinos con gigantes.",
+      "estado": "disponible",
+      "prestado_a": null,
+      "prestado_en": null,
+      "creado_en": "2026-07-28T00:00:00Z"
+    },
+    {
+      "id": "libro-005",
+      "titulo": "La sombra del viento",
+      "autor": "Carlos Ruiz Zafon",
+      "anio_publicacion": 2001,
+      "genero": "misterio",
+      "sinopsis": "Una novela sobre libros, memoria y secretos de Barcelona.",
+      "estado": "disponible",
+      "prestado_a": null,
+      "prestado_en": null,
+      "creado_en": "2026-07-28T00:00:00Z"
+    }
+  ]
+}
+

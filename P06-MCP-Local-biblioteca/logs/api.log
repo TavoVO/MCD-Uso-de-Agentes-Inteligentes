@@ -1,0 +1,20 @@
+INFO:     Started server process [99040]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:60777 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60787 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60793 - "GET /api/libros?titulo=&autor=&genero=&estado=disponible HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60809 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60810 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60844 - "GET /api/libros?titulo=&autor=&genero=&estado=disponible HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60860 - "GET /api/libros?titulo=&autor=&genero=&estado=disponible HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61292 - "POST /api/libros/prestar HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:61326 - "GET /api/libros?titulo=&autor=Gabriel+Garcia+Marquez&genero=&estado= HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61401 - "GET /api/libros?titulo=cien+a%C3%B1os+de+soledad&autor=&genero=&estado= HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61421 - "GET /api/libros?titulo=Cien+anos+de+soledad&autor=&genero=&estado= HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61437 - "POST /api/libros/prestar HTTP/1.1" 400 Bad Request
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [99040]
