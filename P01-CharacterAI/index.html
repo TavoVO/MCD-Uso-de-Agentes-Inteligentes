@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chat Persona AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">Chat de personajes</p>
+                <h1>Elige un personaje y conversa con estilo</h1>
+                <p class="hero-copy">Selecciona un perfil, escribe tu pregunta y escucha respuestas con voz según el personaje elegido.</p>
+            </div>
+            <div class="hero-actions">
+                <div class="voice-panel">
+                    <div class="voice-control toggle-control">
+                        <label class="voice-label" for="voiceEnabled">Modo voz</label>
+                        <div class="toggle">
+                            <input type="checkbox" id="voiceEnabled">
+                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            <label class="toggle-text" for="voiceEnabled">Activar voz</label>
+                        </div>
+                        <p class="voice-field-note">Activa o desactiva la reproducción de audio.</p>
+                    </div>
+                    <div class="voice-control">
+                        <label class="voice-label" for="voiceSelect">Voz</label>
+                        <select id="voiceSelect" class="voice-select" aria-label="Selecciona voz"></select>
+                        <p class="voice-field-note">Elige la voz disponible en tu navegador.</p>
+                    </div>
+                    <div class="voice-control">
+                        <label class="voice-label" for="voiceStyleSelect">Estilo</label>
+                        <select id="voiceStyleSelect" class="voice-select" aria-label="Selecciona tipo de voz"></select>
+                        <p class="voice-field-note">Selecciona la tonalidad y energía del personaje.</p>
+                    </div>
+                </div>
+                <button type="button" id="replayButton" class="button ghost">Reproducir última</button>
+            </div>
+            <p class="voice-note">La voz se genera con el motor gratis del navegador y depende de las voces que tenga tu sistema. Puedes elegir el tipo de voz para acercarte al estilo del personaje, pero sigue siendo una aproximación.</p>
+        </header>
+
+        <main class="layout">
+            <aside class="sidebar">
+                <section class="panel persona-panel">
+                    <h2>Personajes</h2>
+                    <form method="post" class="persona-grid">
+                        <input type="hidden" name="action" value="select_persona">
+                        {% for key, persona in personas.items() %}
+                            <button type="submit" name="persona" value="{{ key }}" class="persona-card{% if selected_person == key %} active{% endif %}">
+                                <span class="persona-icon">{{ persona.label[0] }}</span>
+                                <div class="persona-copy">
+                                    <span class="persona-name">{{ persona.label }}</span>
+                                    <span class="persona-subtitle">{{ persona.subtitle }}</span>
+                                </div>
+                            </button>
+                        {% endfor %}
+                    </form>
+                </section>
+
+                <section class="panel persona-info">
+                    <div class="persona-info-header">
+                        <strong>{{ persona_label }}</strong>
+                        <span>{{ persona_subtitle }}</span>
+                    </div>
+                    <p class="persona-description">{{ persona_description }}</p>
+                    <form method="post" action="{{ url_for('reset') }}">
+                        <button type="submit" class="button ghost full-width">Reiniciar conversación</button>
+                    </form>
+                </section>
+            </aside>
+
+            <section class="chat-panel">
+                <div class="speaking-status hidden" id="speakingIndicator">
+                    <div class="speaking-icon">
+                        <span class="speaking-bar"></span>
+                        <span class="speaking-bar"></span>
+                        <span class="speaking-bar"></span>
+                    </div>
+                    <div class="speaking-copy">
+                        <strong>Hablando...</strong>
+                        <span class="speaking-note">Reproduciendo la respuesta en voz.</span>
+                    </div>
+                </div>
+                <div class="chat-window" id="chatWindow">
+                    {% for message in messages %}
+                        <article class="chat-bubble {{ message.role }}">
+                            <div class="chat-bubble-role">{{ message.role | capitalize }}</div>
+                            <div class="chat-bubble-text">{{ message.content }}</div>
+                        </article>
+                    {% endfor %}
+                </div>
+
+                {% if error %}
+                    <div class="error">Error: {{ error }}</div>
+                {% endif %}
+
+                <form method="post" class="message-form">
+                    <input type="hidden" name="action" value="send_message">
+                    <textarea name="user_message" placeholder="Escribe tu mensaje..." rows="4" required></textarea>
+                    <button type="submit" class="button primary">Enviar</button>
+                </form>
+
+                <div class="metadata">
+                    {% if last_model %}<span>Modelo: {{ last_model }}</span>{% endif %}
+                    {% if last_tokens %}<span>Tokens: {{ last_tokens }}</span>{% endif %}
+                    {% if last_time %}<span>Tiempo: {{ last_time }} ms</span>{% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const voiceToggle = document.getElementById('voiceEnabled');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const voiceStyleSelect = document.getElementById('voiceStyleSelect');
+        const replayButton = document.getElementById('replayButton');
+        const chatWindow = document.getElementById('chatWindow');
+        const selectedPersona = '{{ selected_person }}';
+
+        const voiceProfiles = {
+            goku: {
+                lang: 'ja-JP',
+                rate: 1.05,
+                pitch: 1.25,
+                keywords: ['google 日本語', 'microsoft haruka', 'kyoko', 'otoya']
+            },
+            messi: {
+                lang: 'es-AR',
+                rate: 0.95,
+                pitch: 1.0,
+                keywords: ['google español', 'microsoft helena', 'alex', 'diego', 'lucia']
+            },
+            cr7: {
+                lang: 'en-GB',
+                rate: 1.1,
+                pitch: 1.0,
+                keywords: ['google uk english male', 'microsoft george', 'daniel', 'libby', 'uk english']
+            },
+            neymar: {
+                lang: 'pt-BR',
+                rate: 1.05,
+                pitch: 1.15,
+                keywords: ['google português', 'microsoft maria', 'luciana', 'português']
+            }
+        };
+
+        function findVoiceByKeywords(voices, profile) {
+            const normalized = voice => voice.name.toLowerCase();
+            for (const keyword of profile.keywords) {
+                const match = voices.find(voice => normalized(voice).includes(keyword));
+                if (match) return match;
+            }
+            return null;
+        }
+
+        function getPreferredVoice(voices, profile) {
+            if (!voices.length) return null;
+            const exactLangMatches = voices.filter(v => v.lang.toLowerCase() === profile.lang.toLowerCase());
+            if (exactLangMatches.length) {
+                const keywordMatch = findVoiceByKeywords(exactLangMatches, profile);
+                return keywordMatch || exactLangMatches[0];
+            }
+
+            const broaderLangMatches = voices.filter(v => v.lang.toLowerCase().startsWith(profile.lang.toLowerCase().slice(0, 2)));
+            if (broaderLangMatches.length) {
+                const keywordMatch = findVoiceByKeywords(broaderLangMatches, profile);
+                return keywordMatch || broaderLangMatches[0];
+            }
+
+            const keywordMatch = findVoiceByKeywords(voices, profile);
+            if (keywordMatch) return keywordMatch;
+            return voices[0];
+        }
+
+        function getVoiceStyleSettings(style) {
+            const styles = {
+                natural: { rateDelta: 0, pitchDelta: 0 },
+                heroic: { rateDelta: 0.08, pitchDelta: 0.12 },
+                calm: { rateDelta: -0.05, pitchDelta: -0.08 },
+                deep: { rateDelta: -0.12, pitchDelta: -0.22 },
+                bright: { rateDelta: 0.12, pitchDelta: 0.18 }
+            };
+            return styles[style] || styles.natural;
+        }
+
+        function speakText(text, persona) {
+            if (!text || !window.speechSynthesis) return;
+            const profile = voiceProfiles[persona] || { lang: 'es-ES', rate: 1.0, pitch: 1.0, keywords: [] };
+            const styleName = localStorage.getItem('selectedVoiceStyle') || 'natural';
+            const style = getVoiceStyleSettings(styleName);
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = profile.lang;
+            utterance.rate = Math.min(2, Math.max(0.5, profile.rate + style.rateDelta));
+            utterance.pitch = Math.min(2, Math.max(0.1, profile.pitch + style.pitchDelta));
+            utterance.volume = 1.0;
+
+            const voices = window.speechSynthesis.getVoices();
+            const savedVoice = localStorage.getItem('selectedVoice');
+            let voice = savedVoice ? voices.find(v => v.name === savedVoice) : null;
+            if (!voice) {
+                voice = getPreferredVoice(voices, profile);
+            }
+            if (voice) {
+                utterance.voice = voice;
+            }
+
+            const indicator = document.getElementById('speakingIndicator');
+            if (indicator) {
+                indicator.classList.remove('hidden');
+            }
+
+            utterance.onend = () => {
+                if (indicator) {
+                    indicator.classList.add('hidden');
+                }
+            };
+            utterance.onerror = () => {
+                if (indicator) {
+                    indicator.classList.add('hidden');
+                }
+            };
+
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function populateVoiceStyleList() {
+            const styles = [
+                { value: 'natural', label: 'Natural' },
+                { value: 'heroic', label: 'Heroico / enérgico' },
+                { value: 'calm', label: 'Calmo / sereno' },
+                { value: 'deep', label: 'Profundo' },
+                { value: 'bright', label: 'Brillante' }
+            ];
+            voiceStyleSelect.innerHTML = '';
+            styles.forEach(style => {
+                const option = document.createElement('option');
+                option.value = style.value;
+                option.textContent = style.label;
+                voiceStyleSelect.appendChild(option);
+            });
+            const savedStyle = localStorage.getItem('selectedVoiceStyle');
+            if (savedStyle && [...voiceStyleSelect.options].some(o => o.value === savedStyle)) {
+                voiceStyleSelect.value = savedStyle;
+            }
+        }
+
+        function populateVoiceList() {
+            const voices = window.speechSynthesis.getVoices();
+            voiceSelect.innerHTML = '';
+            if (!voices.length) {
+                voiceSelect.disabled = true;
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No hay voces disponibles todavía';
+                voiceSelect.appendChild(option);
+                return;
+            }
+
+            voiceSelect.disabled = false;
+            const savedVoice = localStorage.getItem('selectedVoice');
+            voices.forEach(voice => {
+                const option = document.createElement('option');
+                option.value = voice.name;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                voiceSelect.appendChild(option);
+            });
+            if (savedVoice && [...voiceSelect.options].some(o => o.value === savedVoice)) {
+                voiceSelect.value = savedVoice;
+            }
+        }
+
+        function loadVoicePreference() {
+            const stored = localStorage.getItem('voiceEnabled');
+            voiceToggle.checked = stored === 'true';
+            populateVoiceStyleList();
+            const storedStyle = localStorage.getItem('selectedVoiceStyle') || 'natural';
+            voiceStyleSelect.value = storedStyle;
+            populateVoiceList();
+        }
+
+        function saveVoicePreference() {
+            localStorage.setItem('voiceEnabled', voiceToggle.checked);
+        }
+
+        function saveSelectedVoice() {
+            localStorage.setItem('selectedVoice', voiceSelect.value);
+        }
+
+        function saveSelectedVoiceStyle() {
+            localStorage.setItem('selectedVoiceStyle', voiceStyleSelect.value);
+        }
+
+        function scrollToBottom() {
+            if (chatWindow) {
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVoicePreference();
+            scrollToBottom();
+            const assistantBubbles = document.querySelectorAll('.chat-bubble.assistant .chat-bubble-text');
+            const lastAssistant = assistantBubbles.length ? assistantBubbles[assistantBubbles.length - 1].textContent.trim() : '';
+            if (voiceToggle.checked && lastAssistant) {
+                speakText(lastAssistant, selectedPersona);
+            }
+        });
+
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+
+        voiceToggle.addEventListener('change', () => {
+            saveVoicePreference();
+        });
+
+        voiceSelect.addEventListener('change', saveSelectedVoice);
+        voiceSelect.addEventListener('mousedown', event => event.stopPropagation());
+        voiceSelect.addEventListener('click', event => event.stopPropagation());
+        voiceStyleSelect.addEventListener('change', saveSelectedVoiceStyle);
+        voiceStyleSelect.addEventListener('mousedown', event => event.stopPropagation());
+        voiceStyleSelect.addEventListener('click', event => event.stopPropagation());
+
+        replayButton.addEventListener('click', () => {
+            const assistantBubbles = document.querySelectorAll('.chat-bubble.assistant .chat-bubble-text');
+            const lastAssistant = assistantBubbles.length ? assistantBubbles[assistantBubbles.length - 1].textContent.trim() : '';
+            if (lastAssistant) {
+                speakText(lastAssistant, selectedPersona);
+            }
+        });
+    </script>
+</body>
+</html>
