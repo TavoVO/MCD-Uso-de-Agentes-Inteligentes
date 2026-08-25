@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG PDF Local</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Proyecto escolar RAG</p>
+        <h1>RAG PDF Local</h1>
+        <p class="lead">
+          Sube un PDF, deja que el sistema lo indexe en PostgreSQL con pgvector y haz preguntas sobre su contenido usando Llama 3.2 en Ollama.
+        </p>
+      </div>
+      <div class="status-card">
+        <span class="status-label">Estado del sistema</span>
+        <div id="healthStatus" class="status-pill neutral">Verificando...</div>
+        <p id="healthDetails" class="muted">Comprobando PostgreSQL y Ollama...</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>1. Subir PDF</h2>
+        <p>El PDF se procesa en segundo plano para que puedas ver su estado.</p>
+      </div>
+
+      <form id="uploadForm" class="upload-form">
+        <input id="pdfInput" type="file" accept="application/pdf,.pdf" />
+        <button type="submit">Procesar PDF</button>
+      </form>
+
+      <div id="uploadMessage" class="message muted">Todavía no se ha cargado ningún documento.</div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar"><span id="uploadProgress"></span></div>
+        <div class="progress-meta">
+          <span id="uploadState">Sin documento activo</span>
+          <span id="uploadCounts"></span>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button id="resetUploadBtn" type="button" class="secondary-btn">Limpiar estado</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>2. Preguntar al PDF</h2>
+        <p>Las respuestas usan los fragmentos recuperados como contexto.</p>
+      </div>
+
+      <form id="chatForm" class="chat-form">
+        <textarea id="questionInput" rows="4" placeholder="Escribe tu pregunta sobre el PDF..."></textarea>
+        <button type="submit">Preguntar</button>
+      </form>
+
+      <div id="chatStatus" class="message muted">Cargando contexto...</div>
+
+      <div class="answer-grid">
+        <article class="answer-card">
+          <h3>Respuesta</h3>
+          <p id="answerText" class="answer-text">La respuesta aparecerá aquí.</p>
+        </article>
+
+        <article class="sources-card">
+          <h3>Fragmentos recuperados</h3>
+          <div id="sourcesList" class="sources-list">
+            <p class="muted">Aquí se mostrarán los fragmentos que alimentaron la respuesta.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
