@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Consulta de Calificaciones</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f7fb; color: #1f2937; }
+        .container { max-width: 920px; margin: 0 auto; padding: 24px; }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        p.lead { margin-top: 0; color: #4b5563; }
+        .chat-box { background: #ffffff; border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); margin-top: 20px; position: relative; }
+        .overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; border-radius: 16px; z-index: 10; }
+        .spinner { display: inline-flex; gap: 12px; align-items: center; font-weight: 600; color: #1f2937; }
+        .spinner:before { content: ""; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #2563eb; border-top-color: transparent; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .bubble { padding: 14px 18px; border-radius: 16px; margin-bottom: 14px; max-width: 100%; line-height: 1.6; }
+        .bubble.user { background: #e0f2fe; color: #0369a1; align-self: flex-end; }
+        .bubble.assistant { background: #f8fafc; color: #111827; align-self: flex-start; }
+        .bubble.system { background: #f3f4f6; color: #374151; align-self: flex-start; }
+        .chat-list { display: flex; flex-direction: column; }
+        .message-form { display: grid; gap: 12px; margin-top: 18px; }
+        textarea { width: 100%; min-height: 110px; resize: vertical; padding: 14px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 1rem; }
+        .button { background: #2563eb; color: white; border: none; border-radius: 12px; padding: 14px 18px; font-size: 1rem; cursor: pointer; }
+        .button:hover { background: #1d4ed8; }
+        .secondary { background: #e2e8f0; color: #0f172a; }
+        .metadata { margin-top: 18px; color: #4b5563; font-size: 0.95rem; }
+        .error { background: #fee2e2; color: #991b1b; padding: 14px 18px; border-radius: 12px; margin-top: 14px; }
+        .help {
+            margin-top: 18px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e3a8a;
+            border-radius: 14px;
+            padding: 14px 16px;
+            line-height: 1.5;
+        }
+        .help strong { display: block; margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Consulta de Calificaciones</h1>
+            <p class="lead">Pregunta por una materia, el promedio de un alumno, el promedio general o acciones de mantenimiento. Si falta información, el chat te la pedirá.</p>
+        </header>
+
+        <div class="chat-box">
+            <div class="chat-list">
+                {% for message in messages %}
+                    <div class="bubble {{ message.role }}">
+                        <strong>{{ message.role | capitalize }}:</strong>
+                        <div>{{ message.content }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if error %}
+                <div class="error">Error: {{ error }}</div>
+            {% endif %}
+
+            <form method="post" id="message_form" class="message-form">
+                <input type="hidden" name="user_message" value="" id="user_message_input">
+                <textarea id="message_textarea" placeholder="Pregunta aquí..." rows="4" required></textarea>
+                <button type="submit" id="submit_button" class="button">Enviar pregunta</button>
+            </form>
+
+            <div id="loading_overlay" class="overlay" aria-hidden="true">
+                <div class="spinner">Procesando...</div>
+            </div>
+
+            <div class="metadata">
+                {% if db_status %}<div>Base de datos: {{ db_status }}</div>{% endif %}
+                {% if last_model %}<div>Modelo: {{ last_model }}</div>{% endif %}
+                {% if last_tokens %}<div>Tokens: {{ last_tokens }}</div>{% endif %}
+                {% if last_time %}<div>Tiempo: {{ last_time }} ms</div>{% endif %}
+                {% if pending_action %}<div>Acción pendiente: {{ pending_action.type }}</div>{% endif %}
+            </div>
+
+            {% if capability_hint %}
+                <div class="help">
+                    <strong>Comandos soportados</strong>
+                    <div>{{ capability_hint }}</div>
+                    <div>Ejemplos: "promedio de Pedro", "calificación de María en Inglés", "agrega materia Física a Juan con 9", "borra alumno María", "lista alumnos con materias y promedios".</div>
+                    <div>Para borrar registros, primero te pediré confirmación.</div>
+                </div>
+            {% endif %}
+
+            <form method="post" action="{{ url_for('reset') }}" style="margin-top: 14px;">
+                <button type="submit" class="button secondary">Reiniciar conversación</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const textarea = document.getElementById('message_textarea');
+        const hiddenInput = document.getElementById('user_message_input');
+        const form = document.getElementById('message_form');
+        const submitButton = document.getElementById('submit_button');
+        const overlay = document.getElementById('loading_overlay');
+
+        // Hide overlay on initial load (in case of back/forward cache)
+        window.addEventListener('load', () => {
+            if (overlay) overlay.style.display = 'none';
+        });
+
+        form.addEventListener('submit', (e) => {
+            hiddenInput.value = textarea.value.trim();
+            // show overlay and disable inputs to signal processing
+            if (overlay) overlay.style.display = 'flex';
+            if (submitButton) submitButton.disabled = true;
+            textarea.disabled = true;
+        });
+    </script>
+</body>
+</html>
